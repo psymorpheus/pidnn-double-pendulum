@@ -1,0 +1,185 @@
+COMMON:
+  save_collected: True
+
+  TIMESTEP: 0.04 # 0.002 * 20
+  TRAINFILE: train.csv
+  TESTFILE: test.csv
+  TESTSET_MULTIPLIER: 2 # |Trainset| = |Trainset|*multiplier
+  BATCH_SIZE: 128
+  EARLY_STOPPING: 6000
+
+  ALL_MODEL_CONFIGS: [PIDNN_200, PIDNN_400, PIDNN_800, FF_200, FF_400, FF_800, FF_1600, FF_3200, FF_6400, FF_12800]
+  ALL_DATA_CONFIGS: [TOY_00_03, TOY_00_10, TOY_10_20, TOY_00_20, TOY_00_40, SIMULATION_00_03, SIMULATION_00_10, SIMULATION_10_20,SIMULATION_00_20, SIMULATION_00_40_2000, SIMULATION_00_40_4000]
+  ALL_NOISE_CONFIGS: [0.00, 0.05, 0.10]
+
+  MODEL_CONFIGS: [PIDNN_200, PIDNN_400, PIDNN_800, FF_200, FF_400, FF_800, FF_1600, FF_3200]
+  DATA_CONFIGS: [SIMULATION_00_40_2000, SIMULATION_00_20, SIMULATION_00_03, SIMULATION_00_10, SIMULATION_10_20, SIMULATION_00_40_4000]
+  NOISE_CONFIGS: [0.00, 0.05, 0.10]
+
+  # ALPHA: [0.01, 0.1, 1, 10, 100] commenting this out so that this file never works
+
+  SAVE_PLOT: True
+  SAVE_MODEL: True
+  DATASET_CACHING: True
+  MODEL_CACHING: False
+  CUDA_ENABLED: True
+  ANOMALY_DETECTION: False
+
+  save_debug: False
+  render: False
+
+# MODEL TEMPLATES
+
+PIDNN:
+  model_name: pidnn
+  num_layers: 8
+  neurons_per_layer: 20
+  training_is_border: False
+  take_differential_points: True
+  num_datadriven: -1  # To be filled by reader
+  num_collocation: -1 # Filled as collocation_multiplier*num_datadriven
+  collocation_multiplier: [1, 5, 10] # Hyperparameter for collocation points
+  differential_order: 3
+
+FF:
+  model_name: ff
+  num_layers: 8
+  neurons_per_layer: 20
+  training_is_border: False
+  take_differential_points: False
+  num_datadriven: -1  # To be filled by reader
+  num_collocation: 0
+  collocation_multiplier: [0]
+
+# DATA RANGES
+TOY_00_03:
+  toy_data: True
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 1000
+  TRAIN_VX_VALUES: 20
+  TRAIN_VX_START: 0.0
+  TRAIN_VX_END: 3.0
+
+  datadir: ./Data/toy_00_03/
+  testdirs: []
+
+TOY_00_10:
+  toy_data: True
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 1000
+  TRAIN_VX_VALUES: 60
+  TRAIN_VX_START: 0.0
+  TRAIN_VX_END: 10.0
+
+  datadir: ./Data/toy_00_10/
+  testdirs: []
+
+TOY_00_20:
+  toy_data: True
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 1000
+  TRAIN_VX_VALUES: 120
+  TRAIN_VX_START: 0.0
+  TRAIN_VX_END: 20.0
+
+  datadir: ./Data/toy_00_20/
+  testdirs: []
+
+TOY_10_20:
+  toy_data: True
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 1000
+  TRAIN_VX_VALUES: 60
+  TRAIN_VX_START: 10.0
+  TRAIN_VX_END: 20.0
+
+  datadir: ./Data/toy_10_20/
+  testdirs: []
+
+TOY_00_40:
+  toy_data: True
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 2000
+  TRAIN_VX_VALUES: 240
+  TRAIN_VX_START: 0.0
+  TRAIN_VX_END: 40.0
+
+  datadir: ./Data/toy_00_40/
+  testdirs: []
+
+SIMULATION_00_03:
+  toy_data: False
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 1000
+  TRAIN_VX_VALUES: 20
+  TRAIN_VX_START: 0.0
+  TRAIN_VX_END: 3.0
+
+  datadir: ./Data/simulation_00_03/
+  testdirs: []
+
+SIMULATION_00_10:
+  toy_data: False
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 1000
+  TRAIN_VX_VALUES: 60
+  TRAIN_VX_START: 0.0
+  TRAIN_VX_END: 10.0
+
+  datadir: ./Data/simulation_00_10/
+  testdirs: []
+
+SIMULATION_10_20:
+  toy_data: False
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 1000
+  TRAIN_VX_VALUES: 60
+  TRAIN_VX_START: 10.0
+  TRAIN_VX_END: 20.0
+
+  datadir: ./Data/simulation_10_20/
+  testdirs: []
+
+SIMULATION_00_20:
+  toy_data: False
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 1000
+  TRAIN_VX_VALUES: 120
+  TRAIN_VX_START: 0.0
+  TRAIN_VX_END: 20.0
+
+  datadir: ./Data/simulation_00_20/
+  testdirs: []
+
+SIMULATION_00_40_2000:
+  toy_data: False
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 2000
+  TRAIN_VX_VALUES: 240
+  TRAIN_VX_START: 0.0
+  TRAIN_VX_END: 40.0
+
+  datadir: ./Data/simulation_00_40_2000/
+  testdirs: []
+
+SIMULATION_00_40_4000:
+  toy_data: False
+  acc: -0.9
+
+  TRAIN_ITERATIONS: 4000
+  TRAIN_VX_VALUES: 240
+  TRAIN_VX_START: 0.0
+  TRAIN_VX_END: 40.0
+
+  datadir: ./Data/simulation_00_40_4000/
+  testdirs: []
