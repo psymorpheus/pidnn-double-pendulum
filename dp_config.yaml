@@ -6,26 +6,26 @@ COMMON:
   TESTFILE: test.csv
   TESTSET_MULTIPLIER: 2 # |Trainset| = |Trainset|*multiplier
   BATCH_SIZE: 128
-  EARLY_STOPPING: 6400
+  EARLY_STOPPING: 50000
 
   ALL_MODEL_CONFIGS: [PIDNN_200, PIDNN_400, PIDNN_800, PIDNN_1600, PIDNN_3200, FF_200, FF_400, FF_800, FF_1600]
   ALL_DATA_CONFIGS: [SIMULATION_80_90, SIMULATION_150_170, SIMULATION_140_170]
   ALL_NOISE_CONFIGS: [0.00, 0.05, 0.10]
 
-  MODEL_CONFIGS: [PIDNN_800]
+  MODEL_CONFIGS: [PIDNN_400]
   DATA_CONFIGS: [SIMULATION_80_90]
   NOISE_CONFIGS: [0.00]
 
   # ALPHA: [0.01, 0.1, 1, 10, 100]
   # BETA: [0.01, 0.1, 1, 10, 100]
-  ALPHA: [0]
-  BETA: [0]
+  ALPHA: [0.0005]
+  BETA: [0.0005]
 
   SAVE_PLOT: True
   SAVE_MODEL: True
   DATASET_CACHING: False
   MODEL_CACHING: False
-  CUDA_ENABLED: False
+  CUDA_ENABLED: True
   ANOMALY_DETECTION: False
 
   save_debug: False
@@ -48,7 +48,7 @@ PIDNN:
   num_datadriven: -1  # To be filled by reader
   num_collocation: -1 # Filled as collocation_multiplier*num_datadriven
   # collocation_multiplier: [1, 5, 10] # Hyperparameter for collocation points
-  collocation_multiplier: [7] # Hyperparameter for collocation points
+  collocation_multiplier: [5] # Hyperparameter for collocation points
   differential_order: 3
 
 FF:

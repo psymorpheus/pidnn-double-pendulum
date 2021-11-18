@@ -58,9 +58,12 @@ def dataloader(config, device):
 	AAT_u_train = AAT_true[idx_train, :3]
 	A_u_train = AAT_true[idx_train, 3:]
 
+	idx_basecases = range(0, data.shape[0], config['TRAIN_ITERATIONS'])
+
 	if N_f > 0:
 		AAT_f_train = lb + (ub-lb)*lhs(3, N_f)		# 3 for 3 dimensional input data
 		AAT_f_train = np.vstack((AAT_f_train, AAT_u_train))     # Taken all basecase points in collocation as well
+		AAT_f_train = np.vstack([AAT_f_train, AAT_true[idx_basecases][:,:3]])
 	else:
 		AAT_f_train = AAT_u_train
 
