@@ -6,27 +6,36 @@ COMMON:
   TESTFILE: test.csv
   TESTSET_MULTIPLIER: 2 # |Trainset| = |Trainset|*multiplier
   BATCH_SIZE: 128
-  EARLY_STOPPING: 6000
+  EARLY_STOPPING: 6400
 
-  ALL_MODEL_CONFIGS: [PIDNN_200, PIDNN_400, PIDNN_800, FF_200, FF_400, FF_800, FF_1600, FF_3200, FF_6400, FF_12800]
-  ALL_DATA_CONFIGS: [TOY_00_03, TOY_00_10, TOY_10_20, TOY_00_20, TOY_00_40, SIMULATION_00_03, SIMULATION_00_10, SIMULATION_10_20,SIMULATION_00_20, SIMULATION_00_40_2000, SIMULATION_00_40_4000]
+  ALL_MODEL_CONFIGS: [PIDNN_200, PIDNN_400, PIDNN_800, PIDNN_1600, PIDNN_3200, FF_200, FF_400, FF_800, FF_1600]
+  ALL_DATA_CONFIGS: [SIMULATION_80_90, SIMULATION_150_170, SIMULATION_140_170]
   ALL_NOISE_CONFIGS: [0.00, 0.05, 0.10]
 
-  MODEL_CONFIGS: [PIDNN_200, PIDNN_400, PIDNN_800, FF_200, FF_400, FF_800, FF_1600, FF_3200]
-  DATA_CONFIGS: [SIMULATION_00_40_2000, SIMULATION_00_20, SIMULATION_00_03, SIMULATION_00_10, SIMULATION_10_20, SIMULATION_00_40_4000]
-  NOISE_CONFIGS: [0.00, 0.05, 0.10]
+  MODEL_CONFIGS: [PIDNN_800]
+  DATA_CONFIGS: [SIMULATION_80_90]
+  NOISE_CONFIGS: [0.00]
 
-  # ALPHA: [0.01, 0.1, 1, 10, 100] commenting this out so that this file never works
+  # ALPHA: [0.01, 0.1, 1, 10, 100]
+  # BETA: [0.01, 0.1, 1, 10, 100]
+  ALPHA: [0]
+  BETA: [0]
 
   SAVE_PLOT: True
   SAVE_MODEL: True
-  DATASET_CACHING: True
+  DATASET_CACHING: False
   MODEL_CACHING: False
-  CUDA_ENABLED: True
+  CUDA_ENABLED: False
   ANOMALY_DETECTION: False
 
   save_debug: False
   render: False
+
+  g: 9.81
+  m1: 2
+  m2: 1
+  l1: 2
+  l2: 1
 
 # MODEL TEMPLATES
 
@@ -38,7 +47,8 @@ PIDNN:
   take_differential_points: True
   num_datadriven: -1  # To be filled by reader
   num_collocation: -1 # Filled as collocation_multiplier*num_datadriven
-  collocation_multiplier: [1, 5, 10] # Hyperparameter for collocation points
+  # collocation_multiplier: [1, 5, 10] # Hyperparameter for collocation points
+  collocation_multiplier: [7] # Hyperparameter for collocation points
   differential_order: 3
 
 FF:
@@ -52,134 +62,36 @@ FF:
   collocation_multiplier: [0]
 
 # DATA RANGES
-TOY_00_03:
-  toy_data: True
-  acc: -0.9
 
-  TRAIN_ITERATIONS: 1000
-  TRAIN_VX_VALUES: 20
-  TRAIN_VX_START: 0.0
-  TRAIN_VX_END: 3.0
-
-  datadir: ./Data/toy_00_03/
-  testdirs: []
-
-TOY_00_10:
-  toy_data: True
-  acc: -0.9
-
-  TRAIN_ITERATIONS: 1000
-  TRAIN_VX_VALUES: 60
-  TRAIN_VX_START: 0.0
-  TRAIN_VX_END: 10.0
-
-  datadir: ./Data/toy_00_10/
-  testdirs: []
-
-TOY_00_20:
-  toy_data: True
-  acc: -0.9
-
-  TRAIN_ITERATIONS: 1000
-  TRAIN_VX_VALUES: 120
-  TRAIN_VX_START: 0.0
-  TRAIN_VX_END: 20.0
-
-  datadir: ./Data/toy_00_20/
-  testdirs: []
-
-TOY_10_20:
-  toy_data: True
-  acc: -0.9
-
-  TRAIN_ITERATIONS: 1000
-  TRAIN_VX_VALUES: 60
-  TRAIN_VX_START: 10.0
-  TRAIN_VX_END: 20.0
-
-  datadir: ./Data/toy_10_20/
-  testdirs: []
-
-TOY_00_40:
-  toy_data: True
-  acc: -0.9
-
-  TRAIN_ITERATIONS: 2000
-  TRAIN_VX_VALUES: 240
-  TRAIN_VX_START: 0.0
-  TRAIN_VX_END: 40.0
-
-  datadir: ./Data/toy_00_40/
-  testdirs: []
-
-SIMULATION_00_03:
+SIMULATION_80_90:
   toy_data: False
-  acc: -0.9
 
   TRAIN_ITERATIONS: 1000
-  TRAIN_VX_VALUES: 20
-  TRAIN_VX_START: 0.0
-  TRAIN_VX_END: 3.0
+  TRAIN_THETA_VALUES: 6  # Actual values = n^2 because n for theta1 and n each for theta2
+  TRAIN_THETA_START: 80.0
+  TRAIN_THETA_END: 90.0
 
-  datadir: ./Data/simulation_00_03/
+  datadir: ./Data/simulation_80_90/
   testdirs: []
 
-SIMULATION_00_10:
+SIMULATION_150_170:
   toy_data: False
-  acc: -0.9
 
   TRAIN_ITERATIONS: 1000
-  TRAIN_VX_VALUES: 60
-  TRAIN_VX_START: 0.0
-  TRAIN_VX_END: 10.0
+  TRAIN_THETA_VALUES: 8
+  TRAIN_THETA_START: 150.0
+  TRAIN_THETA_END: 170.0
 
-  datadir: ./Data/simulation_00_10/
+  datadir: ./Data/simulation_150_170/
   testdirs: []
 
-SIMULATION_10_20:
+SIMULATION_140_170:
   toy_data: False
-  acc: -0.9
 
   TRAIN_ITERATIONS: 1000
-  TRAIN_VX_VALUES: 60
-  TRAIN_VX_START: 10.0
-  TRAIN_VX_END: 20.0
+  TRAIN_THETA_VALUES: 10
+  TRAIN_THETA_START: 140.0
+  TRAIN_THETA_END: 170.0
 
-  datadir: ./Data/simulation_10_20/
-  testdirs: []
-
-SIMULATION_00_20:
-  toy_data: False
-  acc: -0.9
-
-  TRAIN_ITERATIONS: 1000
-  TRAIN_VX_VALUES: 120
-  TRAIN_VX_START: 0.0
-  TRAIN_VX_END: 20.0
-
-  datadir: ./Data/simulation_00_20/
-  testdirs: []
-
-SIMULATION_00_40_2000:
-  toy_data: False
-  acc: -0.9
-
-  TRAIN_ITERATIONS: 2000
-  TRAIN_VX_VALUES: 240
-  TRAIN_VX_START: 0.0
-  TRAIN_VX_END: 40.0
-
-  datadir: ./Data/simulation_00_40_2000/
-  testdirs: []
-
-SIMULATION_00_40_4000:
-  toy_data: False
-  acc: -0.9
-
-  TRAIN_ITERATIONS: 4000
-  TRAIN_VX_VALUES: 240
-  TRAIN_VX_START: 0.0
-  TRAIN_VX_END: 40.0
-
-  datadir: ./Data/simulation_00_40_4000/
+  datadir: ./Data/simulation_140_170/
   testdirs: []

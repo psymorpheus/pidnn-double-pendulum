@@ -4,6 +4,10 @@ import numpy as np
 import pandas as pd
 import os
 import sys
+from dp_datagen import double_pendulum_data
+from dp_pidnn import pidnn_driver
+from dp_dataloader import testloader
+from dp_ff import ff_driver
 
 if len(sys.argv) > 2:
     config_filename = sys.argv[2]
@@ -48,8 +52,6 @@ def generate_folders():
                 print("'%s' can not be created" % (modeldir + '/' + noisedir + '/' + filename.lower()))
     print('Successfully created all directories!')
 
-# generate_folders()
-
 def generate_all_datasets():
     for active_data_config_name in common_config['DATA_CONFIGS']:
         active_data_config = all_configs[active_data_config_name].copy()
@@ -57,30 +59,24 @@ def generate_all_datasets():
         config = active_data_config
 
         config['datafile'] = config['TRAINFILE']
-        config['vx_range'] = np.linspace(config['TRAIN_VX_START'], config['TRAIN_VX_END'], num = config['TRAIN_VX_VALUES'], dtype=np.float32)
+        config['theta_range'] = np.linspace(config['TRAIN_THETA_START']*np.pi/180.0, config['TRAIN_THETA_END']*np.pi/180.0, num = config['TRAIN_THETA_VALUES'], dtype=np.float32)
         config['t_range'] = np.arange(start=0.0, stop = config['TIMESTEP']*config['TRAIN_ITERATIONS'], step = config['TIMESTEP'])
 
         if config['DATASET_CACHING'] and os.path.isfile(config['datadir']+config['datafile']):
             print('Skipping ' + config['datadir'] + config['datafile'])
         else:
-            if config['toy_data']:
-                toy_datagen(config)
-            else:
-                simulation_datagen(config)
+            double_pendulum_data(config)
         
         config['datafile'] = config['TESTFILE']
-        new_vx_range = []
-        for i in range(len(config['vx_range'])-1):
-            new_vx_range.append(np.random.uniform(low=config['vx_range'][i], high=config['vx_range'][i+1], size=(config['TESTSET_MULTIPLIER'],)))
-        config['vx_range'] = np.array(new_vx_range).reshape((-1,))
+        new_theta_range = []
+        for i in range(len(config['theta_range'])-1):
+            new_theta_range.append(np.random.uniform(low=config['theta_range'][i], high=config['theta_range'][i+1], size=(config['TESTSET_MULTIPLIER'],)))
+        config['theta_range'] = np.array(new_theta_range).reshape((-1,))
 
         if config['DATASET_CACHING'] and os.path.isfile(config['datadir']+config['datafile']):
             print('Skipping ' + config['datadir'] + config['datafile'])
         else:
-            if config['toy_data']:
-                toy_datagen(config)
-            else:
-                simulation_datagen(config)
+            double_pendulum_data(config)
 
 
 # generate_all_datasets()
@@ -101,13 +97,14 @@ def train_all_models():
                 config = active_model_config
 
                 config['datafile'] = config['TRAINFILE']
-                config['vx_range'] = np.linspace(config['TRAIN_VX_START'], config['TRAIN_VX_END'], num = config['TRAIN_VX_VALUES'], dtype=np.float32)
-                config['t_range'] = np.arange(start=0.0, stop = config['TIMESTEP']*config['TRAIN_ITERATIONS'], step = config['TIMESTEP'])
                 config['noise'] = noise
                 config['modeldir'] = 'Models/Noise_' + f'{int(100*noise)}/' + active_data_config_name.lower() + '/'
 
                 print(f'======================={active_data_config_name}, {active_model_config_name}, Noise {int(100*noise)}%=======================')
-                pidnn_driver(config)
+                if config['take_differential_points']:
+                    pidnn_driver(config)
+                else:
+                    ff_driver(config)
 
 # train_all_models()
 
