@@ -190,6 +190,9 @@ class PINN(nn.Module):
         # T1_tt = T1_T1T2t_T1T2t[:,[2]]
         # T2_tt = T2_T1T2t_T1T2t[:,[2]]
 
+        T1 += x[:, 1]
+        T1 += x[:, 2]
+
         f1 = self.config['l1'] * (self.config['m1']+self.config['m2']) * T1_tt \
             + self.config['l2'] * self.config['m2'] * torch.sin(T1 - T2) * (T2_t ** 2) \
             + self.config['l2'] * self.config['m2'] * torch.cos(T1 - T2) * T2_tt \
@@ -222,11 +225,11 @@ class PINN(nn.Module):
 
     def loss(self,AAT_u_train,A_u_train,AAT_f_train):
 
+        self.loss_u = self.loss_BC(AAT_u_train,A_u_train)
         if self.config['take_differential_points']:
             self.loss_f = self.loss_PDE(AAT_f_train)
         else:
             self.loss_f = torch.tensor(0)
-        self.loss_u = self.loss_BC(AAT_u_train,A_u_train)
         loss_val = self.loss_u + self.loss_f
         
         return loss_val

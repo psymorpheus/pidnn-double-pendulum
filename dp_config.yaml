@@ -12,14 +12,14 @@ COMMON:
   ALL_DATA_CONFIGS: [SIMULATION_80_90, SIMULATION_150_170, SIMULATION_140_170]
   ALL_NOISE_CONFIGS: [0.00, 0.05, 0.10]
 
-  MODEL_CONFIGS: [PIDNN_400]
+  MODEL_CONFIGS: [FF_1600]
   DATA_CONFIGS: [SIMULATION_80_90]
   NOISE_CONFIGS: [0.00]
 
   # ALPHA: [0.01, 0.1, 1, 10, 100]
   # BETA: [0.01, 0.1, 1, 10, 100]
-  ALPHA: [0.0005]
-  BETA: [0.0005]
+  ALPHA: [0.05]
+  BETA: [0.05]
 
   SAVE_PLOT: True
   SAVE_MODEL: True
@@ -54,7 +54,7 @@ PIDNN:
 FF:
   model_name: ff
   num_layers: 8
-  neurons_per_layer: 20
+  neurons_per_layer: 40
   training_is_border: False
   take_differential_points: False
   num_datadriven: -1  # To be filled by reader
