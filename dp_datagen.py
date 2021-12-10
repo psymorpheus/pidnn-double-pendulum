@@ -74,8 +74,8 @@ def double_pendulum_data(config):
                 np.reshape(t,(-1,1)),
                 theta1*np.ones(shape=(len(t),1)),
                 theta2*np.ones(shape=(len(t),1)),
-                solved_data[:,[0]]-theta1*np.ones(shape=(len(t),1)),
-                solved_data[:,[2]]-theta2*np.ones(shape=(len(t),1))
+                solved_data[:,[0]],
+                solved_data[:,[2]]
             ])
             data = np.vstack((data, iteration_data))
 

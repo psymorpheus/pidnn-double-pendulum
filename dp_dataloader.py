@@ -14,11 +14,11 @@ def set_loss(model, device, batch_size, data = None, A_true = None):
 	if data is None:
 		data = AAT_validation
 		A_true = A_validation
-	loss_function = torch.nn.MSELoss(reduction ='mean')
+	# loss_function = torch.nn.MSELoss(reduction ='mean')
 	f_hat = torch.zeros_like(A_true)
 	with torch.no_grad():
 		prediction = model.forward(data)
-	return loss_function(prediction, A_true)/loss_function(A_true, f_hat)
+	return model.loss_function(prediction, A_true)/model.loss_function(A_true, f_hat)
 
 	
 	error = 0

@@ -23,14 +23,15 @@ with open("dp_config.yaml", "r") as f:
 # theta1 = float(input('Enter initial Theta 1: '))
 # theta2 = float(input('Enter initial Theta 2: '))
 # tsteps = int(input('Enter number of timesteps: '))
-theta1 = 85 * np.pi/180
-theta2 = 85 * np.pi/180
-tsteps = 1000
+theta1 = 80 * np.pi/180
+theta2 = 80 * np.pi/180
+tsteps = 10000
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cpu')
 
 active_data_config_name = 'SIMULATION_80_90'
-active_model_config_name = 'FF_800'
+active_model_config_name = 'FF_60000'
 noise = 0.00
 
 active_data_config = all_configs[active_data_config_name].copy()
@@ -50,13 +51,20 @@ simulator_output = np.hstack([
 print("Simulator output obtained!")
 
 nn_input = np.hstack([t.reshape(-1,1), theta1 * np.ones((tsteps,1)), theta2 * np.ones((tsteps,1))])
+nn_input = torch.from_numpy(nn_input)
+nn_input = nn_input.to(device)
+nn_input = nn_input.cuda()
 model = torch.load(f'Models/Noise_{int(noise*100)}/{active_data_config_name.lower()}/{active_model_config_name.lower()}.pt')
+model.u_b.to(device)
+model.l_b.to(device)
+model.to(device)
 model.eval()
 nn_output = model(nn_input)
 print("NN output obtained!")
 
 # has time, sim theta1, sim theta2, nn theta1, nn theta2
-history = np.hstack([simulator_output, nn_output.detach().numpy()])
+history = np.hstack([simulator_output, nn_output.detach().cpu().numpy()])
+np.savetxt('pen_debug.csv', history, delimiter=",")
 
 def get_x1y1x2y2(t, the1, the2, L1=config['l1'], L2=config['l2']):
     return (L1*np.sin(the1),
@@ -64,8 +72,8 @@ def get_x1y1x2y2(t, the1, the2, L1=config['l1'], L2=config['l2']):
             L1*np.sin(the1) + L2*np.sin(the2),
             -L1*np.cos(the1) - L2*np.cos(the2))
 
-x1, y1, x2, y2 = get_x1y1x2y2(t, history[:,1], history[:,2])
-xp1, yp1, xp2, yp2 = get_x1y1x2y2(t, history[:,3], history[:,4])
+x1, y1, x2, y2 = get_x1y1x2y2(t, history[::10,1], history[::10,2])
+xp1, yp1, xp2, yp2 = get_x1y1x2y2(t, history[::10,3], history[::10,4])
 def animate(i):
     ln1.set_data([0, x1[i], x2[i]], [0, y1[i], y2[i]])
     ln2.set_data([0, xp1[i], xp2[i]], [0, yp1[i], yp2[i]])

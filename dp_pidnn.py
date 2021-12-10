@@ -38,7 +38,7 @@ class PINN(nn.Module):
 
         self.activation = nn.Tanh()
         # self.activation = nn.ReLU()
-        self.loss_function = nn.MSELoss(reduction ='mean') # removing for being able to batch 
+        self.builtin_loss_function = nn.MSELoss(reduction ='mean') # removing for being able to batch 
         self.linears = nn.ModuleList([nn.Linear(layers[i], layers[i+1]) for i in range(len(layers)-1)])
         self.iter = 0
         self.loss_u = None
@@ -54,6 +54,17 @@ class PINN(nn.Module):
             nn.init.xavier_normal_(self.linears[i].weight.data, gain=nn.init.calculate_gain('tanh'))
             nn.init.zeros_(self.linears[i].bias.data)
     
+    def loss_function(self, prediction, actual):
+        del_x1 = self.config['l1'] * (torch.sin(prediction[:,[0]]) - torch.sin(actual[:,[0]]))
+        del_y1 = - self.config['l1'] * (torch.cos(prediction[:,[0]]) - torch.cos(actual[:,[0]]))
+        del_x2 = self.config['l1'] * (torch.sin(prediction[:,[0]]) - torch.sin(actual[:,[0]])) \
+                + self.config['l2'] * (torch.sin(prediction[:,[1]]) - torch.sin(actual[:,[1]]))
+        del_y2 = - self.config['l1'] * (torch.cos(prediction[:,[0]]) - torch.cos(actual[:,[0]])) \
+                - self.config['l2'] * (torch.cos(prediction[:,[1]]) - torch.cos(actual[:,[1]]))
+        square_error = del_x1**2 + del_y1**2 + del_x2**2 + del_y2**2
+        mse = torch.sum(square_error)/square_error.shape[0]
+        return mse
+
     def forward(self,x):
         if torch.is_tensor(x) != True:
             x = torch.from_numpy(x)             
@@ -214,8 +225,8 @@ class PINN(nn.Module):
         # Use alpha beta here itself
         # loss_f1 = self.batched_mse(f1)
         # loss_f2 = self.batched_mse(f2)
-        loss_f1 = self.loss_function(self.f_hat, f1)
-        loss_f2 = self.loss_function(self.f_hat, f2)
+        loss_f1 = self.builtin_loss_function(self.f_hat, f1)
+        loss_f2 = self.builtin_loss_function(self.f_hat, f2)
         # if self.iter<1000:
         #     loss_f = 0*loss_f1 + 0*loss_f2
         # else:
@@ -225,11 +236,11 @@ class PINN(nn.Module):
 
     def loss(self,AAT_u_train,A_u_train,AAT_f_train):
 
-        self.loss_u = self.loss_BC(AAT_u_train,A_u_train)
         if self.config['take_differential_points']:
             self.loss_f = self.loss_PDE(AAT_f_train)
         else:
             self.loss_f = torch.tensor(0)
+        self.loss_u = self.loss_BC(AAT_u_train,A_u_train)
         loss_val = self.loss_u + self.loss_f
         
         return loss_val
@@ -346,11 +357,11 @@ def pidnn_driver(config):
                 # L-BFGS Optimizer
                 global optimizer
                 optimizer = torch.optim.LBFGS(
-                    model.parameters(), lr=0.01, 
+                    model.parameters(), lr=0.05, 
                     max_iter = config['EARLY_STOPPING'],
                     tolerance_grad = 1.0 * np.finfo(float).eps, 
                     tolerance_change = 1.0 * np.finfo(float).eps, 
-                    history_size = 100
+                    history_size = 1000
                 )
                 # optimizer = torch.optim.Adam(
                 #     model.parameters(),

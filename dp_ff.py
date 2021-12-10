@@ -31,7 +31,7 @@ class FF_Baseline(nn.Module):
 		self.layers = layers
 
 		self.activation = nn.ReLU()
-		self.loss_function = nn.MSELoss(reduction ='mean') # removing for being able to batch 
+		self.builtin_loss_function = nn.MSELoss(reduction ='mean') # removing for being able to batch 
 		self.linears = nn.ModuleList([nn.Linear(layers[i], layers[i+1]) for i in range(len(layers)-1)])
 		self.iter = 0
 		self.elapsed = None
@@ -43,9 +43,20 @@ class FF_Baseline(nn.Module):
 			nn.init.xavier_normal_(self.linears[i].weight.data, gain=nn.init.calculate_gain('relu'))
 			nn.init.zeros_(self.linears[i].bias.data)
 	
+	def loss_function(self, prediction, actual):
+		del_x1 = self.config['l1'] * (torch.sin(prediction[:,[0]]) - torch.sin(actual[:,[0]]))
+		del_y1 = - self.config['l1'] * (torch.cos(prediction[:,[0]]) - torch.cos(actual[:,[0]]))
+		del_x2 = self.config['l1'] * (torch.sin(prediction[:,[0]]) - torch.sin(actual[:,[0]])) \
+				+ self.config['l2'] * (torch.sin(prediction[:,[1]]) - torch.sin(actual[:,[1]]))
+		del_y2 = - self.config['l1'] * (torch.cos(prediction[:,[0]]) - torch.cos(actual[:,[0]])) \
+				- self.config['l2'] * (torch.cos(prediction[:,[1]]) - torch.cos(actual[:,[1]]))
+		square_error = del_x1**2 + del_y1**2 + del_x2**2 + del_y2**2
+		mse = torch.sum(square_error)/square_error.shape[0]
+		return mse
+
 	def forward(self,x):
 		if torch.is_tensor(x) != True:
-			x = torch.from_numpy(x)             
+			x = torch.from_numpy(x)    
 					  
 		# Preprocessing input - sclaed from 0 to 1
 		x = (x - self.l_b)/(self.u_b - self.l_b)
@@ -193,7 +204,7 @@ def ff_driver(config):
 	# )
 	optimizer = torch.optim.Adam(
 		model.parameters(),
-		lr=0.01
+		lr=0.001
 	)
 	prev_loss = -np.inf
 	current_loss = np.inf
