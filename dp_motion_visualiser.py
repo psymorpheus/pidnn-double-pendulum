@@ -31,7 +31,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # device = torch.device('cpu')
 
 active_data_config_name = 'SIMULATION_80_90'
-active_model_config_name = 'FF_60000'
+active_model_config_name = 'PIDNN_64000'
 noise = 0.00
 
 active_data_config = all_configs[active_data_config_name].copy()

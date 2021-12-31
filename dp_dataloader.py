@@ -18,7 +18,7 @@ def set_loss(model, device, batch_size, data = None, A_true = None):
 	f_hat = torch.zeros_like(A_true)
 	with torch.no_grad():
 		prediction = model.forward(data)
-	return model.loss_function(prediction, A_true)/model.loss_function(A_true, f_hat)
+	return model.point_loss(prediction, A_true)/model.point_loss(A_true, f_hat)
 
 	
 	error = 0
@@ -54,11 +54,16 @@ def dataloader(config, device):
 	lb = np.min(data[:,:3], axis=0)
 	ub = np.max(data[:,:3], axis=0)
 
-	idx_train = np.random.choice(AAT_true.shape[0], N_u, replace=False)
+	idx_train = np.random.choice(AAT_true.shape[0], N_u - config['INIT_TIMESTEPS'] * T1T2range.shape[0], replace=False)
 	AAT_u_train = AAT_true[idx_train, :3]
 	A_u_train = AAT_true[idx_train, 3:]
 
 	idx_basecases = range(0, data.shape[0], config['TRAIN_ITERATIONS'])
+
+	for i in range(config['INIT_TIMESTEPS']):
+		basecase_indices = np.array(idx_basecases, dtype=np.int32)
+		AAT_u_train = np.vstack([AAT_u_train, AAT_true[basecase_indices+i][:,:3]])
+		A_u_train = np.vstack([A_u_train, AAT_true[basecase_indices+i][:,3:]])
 
 	if N_f > 0:
 		AAT_f_train = lb + (ub-lb)*lhs(3, N_f)		# 3 for 3 dimensional input data

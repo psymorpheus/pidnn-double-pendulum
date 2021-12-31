@@ -54,7 +54,7 @@ class PINN(nn.Module):
             nn.init.xavier_normal_(self.linears[i].weight.data, gain=nn.init.calculate_gain('tanh'))
             nn.init.zeros_(self.linears[i].bias.data)
     
-    def loss_function(self, prediction, actual):
+    def point_loss(self, prediction, actual):
         del_x1 = self.config['l1'] * (torch.sin(prediction[:,[0]]) - torch.sin(actual[:,[0]]))
         del_y1 = - self.config['l1'] * (torch.cos(prediction[:,[0]]) - torch.cos(actual[:,[0]]))
         del_x2 = self.config['l1'] * (torch.sin(prediction[:,[0]]) - torch.sin(actual[:,[0]])) \
@@ -63,6 +63,18 @@ class PINN(nn.Module):
                 - self.config['l2'] * (torch.cos(prediction[:,[1]]) - torch.cos(actual[:,[1]]))
         square_error = del_x1**2 + del_y1**2 + del_x2**2 + del_y2**2
         mse = torch.sum(square_error)/square_error.shape[0]
+        return mse
+    
+    def theta_loss(self, prediction, actual):
+        del_t1 = prediction[:,[0]] - actual[:,[0]]
+        del_t2 = prediction[:,[1]] - actual[:,[1]]
+        square_error = del_t1**2 + del_t2**2
+        mse = torch.sum(square_error)/square_error.shape[0]
+        return mse
+
+    def loss_function(self, prediction, actual):
+        mse = self.config['POINT_LOSS_COEFF'] * self.point_loss(prediction, actual) \
+            + (1 - self.config['POINT_LOSS_COEFF']) * self.theta_loss(prediction, actual)
         return mse
 
     def forward(self,x):
