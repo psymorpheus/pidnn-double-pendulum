@@ -37,19 +37,21 @@ def generate_folders():
         except OSError as error:
             print("'%s' can not be created" % (datadir+'/'+filename.lower()))
     modeldir = './Models'
-    for noise in common_config['NOISE_CONFIGS']:
-        noisedir = f'Noise_{int(100*noise)}'
-        for filename in common_config['DATA_CONFIGS']:
-            path = os.path.join(modeldir, noisedir + '/' + filename.lower())
-            try:
-                os.makedirs(path, exist_ok = True)
-                print("Successfully created '%s'" % (modeldir + '/' + noisedir + '/' + filename.lower()))
-                for modelname in common_config['ALL_MODEL_CONFIGS']:
-                    modelpath = os.path.join(path, modelname.lower())
-                    os.makedirs(modelpath, exist_ok = True)
-                    print("Successfully created '%s'" % (path + '/' + modelname.lower()))
-            except OSError as error:
-                print("'%s' can not be created" % (modeldir + '/' + noisedir + '/' + filename.lower()))
+    for seed in common_config['SEEDS']:
+        seeddir = f'SEED_{seed}'
+        for noise in common_config['NOISE_CONFIGS']:
+            noisedir = f'Noise_{int(100*noise)}'
+            for filename in common_config['DATA_CONFIGS']:
+                path = os.path.join(modeldir, seeddir + '/' + noisedir + '/' + filename.lower())
+                try:
+                    os.makedirs(path, exist_ok = True)
+                    print("Successfully created '%s'" % (modeldir + '/' + seeddir + '/' + noisedir + '/' + filename.lower()))
+                    for modelname in common_config['ALL_MODEL_CONFIGS']:
+                        modelpath = os.path.join(path, modelname.lower())
+                        os.makedirs(modelpath, exist_ok = True)
+                        print("Successfully created '%s'" % (path + '/' + modelname.lower()))
+                except OSError as error:
+                    print("'%s' can not be created" % (modeldir + '/' + noisedir + '/' + filename.lower()))
     print('Successfully created all directories!')
 
 def generate_all_datasets():
@@ -82,57 +84,68 @@ def generate_all_datasets():
 # generate_all_datasets()
         
 def train_all_models():
-    for noise in common_config['NOISE_CONFIGS']:
-        for active_data_config_name in common_config['DATA_CONFIGS']:
-            active_data_config = all_configs[active_data_config_name].copy()
-            active_data_config.update(common_config)
+    for seed in common_config['SEEDS']:
+        for noise in common_config['NOISE_CONFIGS']:
+            for active_data_config_name in common_config['DATA_CONFIGS']:
+                active_data_config = all_configs[active_data_config_name].copy()
+                active_data_config.update(common_config)
 
-            for active_model_config_name in common_config['MODEL_CONFIGS']:
-                if common_config['MODEL_CACHING'] and os.path.isfile(f'./Models/Noise_{int(100*noise)}/{active_data_config_name.lower()}/{active_model_config_name.lower()}.pt'):
-                    print(f'======================= Skipping ./Models/Noise_{int(100*noise)}/{active_data_config_name.lower()}/{active_model_config_name.lower()}.pt =======================')
-                    continue
+                for active_model_config_name in common_config['MODEL_CONFIGS']:
+                    if common_config['MODEL_CACHING'] and os.path.isfile(f'./Models/SEED_{seed}/Noise_{int(100*noise)}/{active_data_config_name.lower()}/{active_model_config_name.lower()}.pt'):
+                        print(f'======================= Skipping ./Models/SEED_{seed}/Noise_{int(100*noise)}/{active_data_config_name.lower()}/{active_model_config_name.lower()}.pt =======================')
+                        continue
 
-                active_model_config = all_configs[active_model_config_name].copy()
-                active_model_config.update(active_data_config)
-                config = active_model_config
+                    active_model_config = all_configs[active_model_config_name].copy()
+                    active_model_config.update(active_data_config)
+                    config = active_model_config
 
-                config['datafile'] = config['TRAINFILE']
-                config['noise'] = noise
-                config['modeldir'] = 'Models/Noise_' + f'{int(100*noise)}/' + active_data_config_name.lower() + '/'
+                    config['datafile'] = config['TRAINFILE']
+                    config['noise'] = noise
+                    config['seed'] = seed
+                    config['modeldir'] = 'Models/' + f'SEED_{seed}/' + f'Noise_{int(100*noise)}/' + active_data_config_name.lower() + '/'
 
-                print(f'======================={active_data_config_name}, {active_model_config_name}, Noise {int(100*noise)}%=======================')
-                if config['take_differential_points']:
-                    pidnn_driver(config)
-                else:
-                    ff_driver(config)
+                    print(f'======================={active_data_config_name}, {active_model_config_name}, Noise {int(100*noise)}%=======================')
+                    if config['take_differential_points']:
+                        pidnn_driver(config)
+                    else:
+                        ff_driver(config)
 
 # train_all_models()
 
 def test_all_models():
+    dicts_testdata = []
     for noise in common_config['NOISE_CONFIGS']:
-        dicts_testdata = []
-
         for active_data_config_name in common_config['DATA_CONFIGS']:
             active_data_config = all_configs[active_data_config_name].copy()
             active_data_config.update(common_config)
-
-            dict_testdata = dict({})
 
             for active_model_config_name in common_config['MODEL_CONFIGS']:
                 active_model_config = all_configs[active_model_config_name].copy()
                 active_model_config.update(active_data_config)
                 config = active_model_config
 
-                model = torch.load('Models/Noise_' + f'{int(100*noise)}/{active_data_config_name.lower()}/' + active_model_config_name.lower() + '.pt')
-                model.eval()
+                seed_results = []
+                for seed in common_config['SEEDS']:
+                    model = torch.load(f'Models/SEED_{seed}/Noise_' + f'{int(100*noise)}/{active_data_config_name.lower()}/' + active_model_config_name.lower() + '.pt')
+                    model.eval()
+                    seed_results.append(testloader(config, config['datadir'] + config['TESTFILE'], model).item())
+                seed_results = np.array(seed_results)
 
-                dict_testdata[active_model_config_name] = "{:.2e}".format(testloader(config, config['datadir'] + config['TESTFILE'], model).item())
-           
-            dicts_testdata.append(dict_testdata)
-        
-        df_testdata = pd.DataFrame(dicts_testdata, index = common_config['DATA_CONFIGS'])
-        df_testdata.to_csv('Models/Noise_' + f'{int(100*noise)}/' + 'inferences_testdata.csv')
-        df_testdata.to_csv(f'inferences_testdata_noise_{int(100*noise)}.csv')
+                result = (noise,
+                    active_data_config_name,
+                    active_model_config_name,
+                    np.mean(seed_results),
+                    np.std(seed_results),
+                    np.max(seed_results),
+                    np.min(seed_results),
+                    np.std(-np.log(seed_results))
+                    )
+                print(result)
+                dicts_testdata.append(result)
+            
+    df_testdata = pd.DataFrame(dicts_testdata,\
+        columns=['NOISE', 'DATASET', 'MODEL', 'ERR_AVG', 'ERR_STD', 'ERR_MAX', 'ERR_MIN', 'LOG_STD'])
+    df_testdata.to_csv(f'Inferences/inferences.csv')
 
 # test_all_models()
 

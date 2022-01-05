@@ -113,9 +113,9 @@ def testloader(config, testfile, model):
 	data = np.genfromtxt(testfile, delimiter=',')
 	data = np.array(data, dtype=np.float32)
 
-	T1T2range = data[range(0,data.shape[0],config['TRAIN_ITERATIONS']),[1,2]]
-	trange = data[:config['TRAIN_ITERATIONS'], [0]]
-	AAT_true = data
+	# T1T2range = data[range(0,data.shape[0],config['TRAIN_ITERATIONS']),[1,2]]
+	# trange = data[:config['TRAIN_ITERATIONS'], [0]]
+	# AAT_true = data
 
 	AAT_test = data[:,:3]
 	A_test = data[:,3:]

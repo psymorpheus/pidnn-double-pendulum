@@ -23,15 +23,15 @@ with open("dp_config.yaml", "r") as f:
 # theta1 = float(input('Enter initial Theta 1: '))
 # theta2 = float(input('Enter initial Theta 2: '))
 # tsteps = int(input('Enter number of timesteps: '))
-theta1 = 80 * np.pi/180
-theta2 = 80 * np.pi/180
+theta1 = 35 * np.pi/180
+theta2 = 35 * np.pi/180
 tsteps = 10000
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # device = torch.device('cpu')
 
-active_data_config_name = 'SIMULATION_80_90'
-active_model_config_name = 'PIDNN_64000'
+active_data_config_name = 'SIMULATION_30_40'
+active_model_config_name = 'PIDNN_128000'
 noise = 0.00
 
 active_data_config = all_configs[active_data_config_name].copy()
@@ -54,7 +54,7 @@ nn_input = np.hstack([t.reshape(-1,1), theta1 * np.ones((tsteps,1)), theta2 * np
 nn_input = torch.from_numpy(nn_input)
 nn_input = nn_input.to(device)
 nn_input = nn_input.cuda()
-model = torch.load(f'Models/Noise_{int(noise*100)}/{active_data_config_name.lower()}/{active_model_config_name.lower()}.pt')
+model = torch.load(f'Models/SEED_2314/Noise_{int(noise*100)}/{active_data_config_name.lower()}/{active_model_config_name.lower()}.pt')
 model.u_b.to(device)
 model.l_b.to(device)
 model.to(device)

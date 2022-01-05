@@ -13,7 +13,7 @@ optimizer = None
 
 class PINN(nn.Module):
     
-    def __init__(self, id, AAT_u, A_u, AAT_f, layers, lb, ub, device, config, alpha, beta, N_u, N_f):
+    def __init__(self, id, AAT_u, A_u, AAT_f, layers, lb, ub, device, config, alpha, beta, N_u, N_f, point_loss_coeff):
         super().__init__()
         
         self.id = id
@@ -27,6 +27,7 @@ class PINN(nn.Module):
         self.N_f = N_f
         self.batch_size = config['BATCH_SIZE']
         self.config = config
+        self.POINT_LOSS_COEFF = point_loss_coeff
        
         # AAT = angle, angle, time
         self.AAT_u = AAT_u
@@ -73,8 +74,8 @@ class PINN(nn.Module):
         return mse
 
     def loss_function(self, prediction, actual):
-        mse = self.config['POINT_LOSS_COEFF'] * self.point_loss(prediction, actual) \
-            + (1 - self.config['POINT_LOSS_COEFF']) * self.theta_loss(prediction, actual)
+        mse = self.POINT_LOSS_COEFF * self.point_loss(prediction, actual) \
+            + (1 - self.POINT_LOSS_COEFF) * self.theta_loss(prediction, actual)
         return mse
 
     def forward(self,x):
@@ -310,7 +311,7 @@ class PINN(nn.Module):
             if debug: savefile_name += 'Debug_'
             savefile_name += 'plot_' + self.config['model_name']
             if debug: savefile_name += '_' + str(self.N_f) + '_' + str(self.alpha)
-            savefile_name += '_' + loss_type
+            savefile_name += '_' + loss_type + '_' + str(int(100*self.POINT_LOSS_COEFF))
             savefile_name += '.png'
             savedir = self.config['modeldir']
             if debug: savedir += self.config['model_name'] + '/'
@@ -323,8 +324,8 @@ def pidnn_driver(config):
     num_neurons = config['neurons_per_layer']
 
     torch.set_default_dtype(torch.float)
-    torch.manual_seed(1234)
-    np.random.seed(1234)
+    torch.manual_seed(config['seed'])
+    np.random.seed(config['seed'])
     if config['ANOMALY_DETECTION']:
         torch.autograd.set_detect_anomaly(True)
     else:
@@ -357,48 +358,50 @@ def pidnn_driver(config):
 
         for i in range(num_alpha):
             for j in range(num_beta):
-                alpha = config['ALPHA'][i]
-                beta = config['BETA'][j]
+                for k in range(len(config['POINT_LOSS_COEFFS'])):
+                    alpha = config['ALPHA'][i]
+                    beta = config['BETA'][j]
+                    plc = config['POINT_LOSS_COEFFS'][k]
 
-                print(f'++++++++++ N_u:{N_u}, N_f:{N_f}, Alpha:{alpha}, Beta:{beta} ++++++++++')
+                    print(f'++++++++++ N_u:{N_u}, N_f:{N_f}, Alpha:{alpha}, Beta:{beta}, Point_loss_coeff:{plc} ++++++++++')
 
-                model = PINN((i,j), AAT_u_train, A_u_train, AAT_f_train, layers, lb, ub, device, config, alpha, beta, N_u, N_f)
-                model.to(device)
-                # print(model)
+                    model = PINN((i,j), AAT_u_train, A_u_train, AAT_f_train, layers, lb, ub, device, config, alpha, beta, N_u, N_f, plc)
+                    model.to(device)
+                    # print(model)
 
-                # L-BFGS Optimizer
-                global optimizer
-                optimizer = torch.optim.LBFGS(
-                    model.parameters(), lr=0.05, 
-                    max_iter = config['EARLY_STOPPING'],
-                    tolerance_grad = 1.0 * np.finfo(float).eps, 
-                    tolerance_change = 1.0 * np.finfo(float).eps, 
-                    history_size = 1000
-                )
-                # optimizer = torch.optim.Adam(
-                #     model.parameters(),
-                #     lr=0.01
-                # )
-                # prev_loss = -np.inf
-                # current_loss = np.inf
-                
-                # start_time = time.time()
+                    # L-BFGS Optimizer
+                    global optimizer
+                    optimizer = torch.optim.LBFGS(
+                        model.parameters(), lr=0.05, 
+                        max_iter = config['EARLY_STOPPING'],
+                        tolerance_grad = 1.0 * np.finfo(float).eps, 
+                        tolerance_change = 1.0 * np.finfo(float).eps, 
+                        history_size = 1000
+                    )
+                    # optimizer = torch.optim.Adam(
+                    #     model.parameters(),
+                    #     lr=0.01
+                    # )
+                    # prev_loss = -np.inf
+                    # current_loss = np.inf
+                    
+                    # start_time = time.time()
 
-                # while abs(current_loss-prev_loss)>np.finfo(float).eps and model.iter<config['EARLY_STOPPING']:
-                #     current_loss, prev_loss = model.closure(), current_loss
-                #     optimizer.step()
-                
-                start_time = time.time()
-                optimizer.step(model.closure)		# Does not need any loop like Adam
-                elapsed = time.time() - start_time                
-                print('Training time: %.2f' % (elapsed))
+                    # while abs(current_loss-prev_loss)>np.finfo(float).eps and model.iter<config['EARLY_STOPPING']:
+                    #     current_loss, prev_loss = model.closure(), current_loss
+                    #     optimizer.step()
+                    
+                    start_time = time.time()
+                    optimizer.step(model.closure)		# Does not need any loop like Adam
+                    elapsed = time.time() - start_time                
+                    print('Training time: %.2f' % (elapsed))
 
-                validation_loss = dpdl.set_loss(model, device, config['BATCH_SIZE'])
-                model.elapsed = elapsed
-                model.plot_history()
-                model.to('cpu')
-                models.append(model)
-                validation_losses.append(validation_loss.cpu().item())
+                    validation_loss = dpdl.set_loss(model, device, config['BATCH_SIZE'])
+                    model.elapsed = elapsed
+                    model.plot_history()
+                    model.to('cpu')
+                    models.append(model)
+                    validation_losses.append(validation_loss.cpu().item())
 
     model_id = np.nanargmin(validation_losses) # choosing best model out of the bunch
     model = models[model_id]

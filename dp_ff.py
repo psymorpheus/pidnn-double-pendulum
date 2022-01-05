@@ -14,7 +14,7 @@ optimizer = None
 
 class FF_Baseline(nn.Module):
     
-    def __init__(self, VT_u, X_u, layers, lb, ub, device, config, N_u):
+    def __init__(self, VT_u, X_u, layers, lb, ub, device, config, N_u, point_loss_coeff):
         super().__init__()
         
         self.id = id
@@ -25,6 +25,7 @@ class FF_Baseline(nn.Module):
         self.N_u = N_u
         self.batch_size = config['BATCH_SIZE']
         self.config = config
+        self.POINT_LOSS_COEFF = point_loss_coeff
        
         self.VT_u = VT_u
         self.X_u = X_u
@@ -62,8 +63,8 @@ class FF_Baseline(nn.Module):
         return mse
 
     def loss_function(self, prediction, actual):
-        mse = self.config['POINT_LOSS_COEFF'] * self.point_loss(prediction, actual) \
-            + (1 - self.config['POINT_LOSS_COEFF']) * self.theta_loss(prediction, actual)
+        mse = self.POINT_LOSS_COEFF * self.point_loss(prediction, actual) \
+            + (1 - self.POINT_LOSS_COEFF) * self.theta_loss(prediction, actual)
         return mse
 
     def forward(self,x):
@@ -159,7 +160,7 @@ class FF_Baseline(nn.Module):
             if debug: savefile_name += 'Debug_'
             savefile_name += 'plot_' + self.config['model_name']
             # if debug: savefile_name += '_' + str(self.N_f) + '_' + str(self.alpha)
-            savefile_name += '_' + loss_type
+            savefile_name += '_' + loss_type + '_' + str(int(100*self.POINT_LOSS_COEFF))
             savefile_name += '.png'
             savedir = self.config['modeldir']
             if debug: savedir += self.config['model_name'] + '/'
@@ -173,8 +174,8 @@ def ff_driver(config):
     num_neurons = config['neurons_per_layer']
 
     torch.set_default_dtype(torch.float)
-    torch.manual_seed(1234)
-    np.random.seed(1234)
+    torch.manual_seed(config['seed'])
+    np.random.seed(config['seed'])
     if config['ANOMALY_DETECTION']:
         torch.autograd.set_detect_anomaly(True)
     else:
@@ -198,45 +199,47 @@ def ff_driver(config):
 
     VT_u_train, u_train, _, lb, ub = dpdl.dataloader(config, device)
 
+    for k in range(len(config['POINT_LOSS_COEFFS'])):
+        plc = config['POINT_LOSS_COEFFS'][k]
 
-    print(f'++++++++++ N_u:{N_u} ++++++++++')
+        print(f'++++++++++ N_u:{N_u}, Point_loss_coeff:{plc} ++++++++++')
 
-    model = FF_Baseline(VT_u_train, u_train, layers, lb, ub, device, config, N_u)
-    model.to(device)
-    # print(model)
+        model = FF_Baseline(VT_u_train, u_train, layers, lb, ub, device, config, N_u, plc)
+        model.to(device)
+        # print(model)
 
-    # L-BFGS Optimizer
-    global optimizer
-    # optimizer = torch.optim.LBFGS(
-    # 	model.parameters(), lr=0.01, 
-    # 	max_iter = config['EARLY_STOPPING'],
-    # 	tolerance_grad = 1.0 * np.finfo(float).eps, 
-    # 	tolerance_change = 1.0 * np.finfo(float).eps, 
-    # 	history_size = 100
-    # )
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=0.001
-    )
-    prev_loss = -np.inf
-    current_loss = np.inf
-    
-    start_time = time.time()
+        # L-BFGS Optimizer
+        global optimizer
+        # optimizer = torch.optim.LBFGS(
+        # 	model.parameters(), lr=0.01, 
+        # 	max_iter = config['EARLY_STOPPING'],
+        # 	tolerance_grad = 1.0 * np.finfo(float).eps, 
+        # 	tolerance_change = 1.0 * np.finfo(float).eps, 
+        # 	history_size = 100
+        # )
+        optimizer = torch.optim.Adam(
+            model.parameters(),
+            lr=0.001
+        )
+        prev_loss = -np.inf
+        current_loss = np.inf
+        
+        start_time = time.time()
 
-    # optimizer.step(model.closure)		# Does not need any loop like Adam
-    while abs(current_loss-prev_loss)>np.finfo(float).eps and model.iter<config['EARLY_STOPPING']:
-        current_loss, prev_loss = model.closure(), current_loss
-        optimizer.step()
+        # optimizer.step(model.closure)		# Does not need any loop like Adam
+        while abs(current_loss-prev_loss)>np.finfo(float).eps and model.iter<config['EARLY_STOPPING']:
+            current_loss, prev_loss = model.closure(), current_loss
+            optimizer.step()
 
-    elapsed = time.time() - start_time                
-    print('Training time: %.2f' % (elapsed))
+        elapsed = time.time() - start_time                
+        print('Training time: %.2f' % (elapsed))
 
-    validation_loss = dpdl.set_loss(model, device, config['BATCH_SIZE'])
-    model.elapsed = elapsed
-    model.plot_history()
-    model.to('cpu')
-    models.append(model)
-    validation_losses.append(validation_loss.cpu().item())
+        validation_loss = dpdl.set_loss(model, device, config['BATCH_SIZE'])
+        model.elapsed = elapsed
+        model.plot_history()
+        model.to('cpu')
+        models.append(model)
+        validation_losses.append(validation_loss.cpu().item())
 
     model_id = np.nanargmin(validation_losses) # choosing best model out of the bunch
     model = models[model_id]
