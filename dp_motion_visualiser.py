@@ -23,22 +23,24 @@ with open("dp_config.yaml", "r") as f:
 # theta1 = float(input('Enter initial Theta 1: '))
 # theta2 = float(input('Enter initial Theta 2: '))
 # tsteps = int(input('Enter number of timesteps: '))
-theta1 = 35 * np.pi/180
-theta2 = 35 * np.pi/180
-tsteps = 10000
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # device = torch.device('cpu')
 
-active_data_config_name = 'SIMULATION_30_40'
-active_model_config_name = 'PIDNN_128000'
-noise = 0.00
+active_data_config_name = 'SIMULATION_80_90'
+active_model_config_name = 'PIDNN_64000'
+noise = 0.1
 
 active_data_config = all_configs[active_data_config_name].copy()
 active_data_config.update(common_config)
 active_model_config = all_configs[active_model_config_name].copy()
 active_model_config.update(active_data_config)
 config = active_model_config
+
+theta1 = ((config['TRAIN_THETA_START'] + config['TRAIN_THETA_END'])/2) * np.pi/180
+theta2 = ((config['TRAIN_THETA_START'] + config['TRAIN_THETA_END'])/2) * np.pi/180
+tsteps = 10000
+
 config['t_range'] = np.arange(start=0.0, stop = config['TIMESTEP']*tsteps, step = config['TIMESTEP'])
 t = config['t_range']
 
@@ -88,5 +90,9 @@ ax.set_ylim(-4,4)
 ax.set_xlim(-4,4)
 ani = animation.FuncAnimation(fig, animate, frames=1000, interval=50)
 print("Starting animation")
-ani.save('pen.gif',writer='pillow',fps=25)
+animation_name = 'pen_'
+animation_name += active_model_config_name.replace('_','').lower() + '_'
+animation_name += active_data_config_name.replace('_','').lower() + '_'
+animation_name += 'ab0005_init20.mp4'
+ani.save(animation_name,writer='ffmpeg',fps=25)
 print("Animation finished.")
